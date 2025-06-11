@@ -8,3 +8,9 @@ docker cp ./StackOverflow2010/StackOverflow2010_log.ldf mssql_server:/var/opt/ms
 
 # Attach database dengan password BARU
 docker exec -it mssql_server /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "yourStrong(!)Password123" -Q "CREATE DATABASE StackOverflow2010 ON (FILENAME = '/var/opt/mssql/data/StackOverflow2010.mdf'), (FILENAME = '/var/opt/mssql/data/StackOverflow2010_log.ldf') FOR ATTACH;"
+
+
+
+
+link download database StackOverflow2010
+https://www.brentozar.com/archive/2015/10/how-to-download-the-stack-overflow-database-via-bittorrent/

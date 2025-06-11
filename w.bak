@@ -1,0 +1,10 @@
+docker cp ./StackOverflow2010/StackOverflow2010.mdf mssql_server:/var/opt/mssql/data/
+docker cp ./StackOverflow2010/StackOverflow2010_log.ldf mssql_server:/var/opt/mssql/data/
+
+
+# Salin file
+docker cp ./StackOverflow2010/StackOverflow2010.mdf mssql_server:/var/opt/mssql/data/
+docker cp ./StackOverflow2010/StackOverflow2010_log.ldf mssql_server:/var/opt/mssql/data/
+
+# Attach database dengan password BARU
+docker exec -it mssql_server /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "yourStrong(!)Password123" -Q "CREATE DATABASE StackOverflow2010 ON (FILENAME = '/var/opt/mssql/data/StackOverflow2010.mdf'), (FILENAME = '/var/opt/mssql/data/StackOverflow2010_log.ldf') FOR ATTACH;"

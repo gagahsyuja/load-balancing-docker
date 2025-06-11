@@ -1,0 +1,2 @@
+CREATE DATABASE StackOverflow2010;
+GO

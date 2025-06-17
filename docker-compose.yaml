@@ -1,92 +1,93 @@
 services:
   database:
-    build:
-      context: ./database
+    image: mcr.microsoft.com/mssql/server:2025-latest
     container_name: mssql_server
-    ports:
-      - "1433:1433"
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "PulauJawaBesar1234" 
-      # SA_PASSWORD: "PulauJawaBesar1234" 
+      MSSQL_SA_PASSWORD: "VeryLongPassword69$" 
       MSSQL_PID: "Developer"
+    user: root
+    ports:
+      - "1433:1433"
     volumes:
-      - mssql_data:/var/opt/mssql
+      - ./database/StackOverflowMini.bak:/var/opt/mssql/StackOverflowMini.bak
+      - ./database/init-db.sql:/var/opt/mssql/init-db.sql
+      - ./database/entrypoint.sh:/entrypoint.sh
+    entrypoint: /entrypoint.sh
     networks:
       - app-net
     restart: unless-stopped
     tty: true
 
-  app1:
-    image: directus/directus:latest
-    container_name: app_server_1
+  directus:
+    image: directus/directus:11
+    container_name: directus
     ports:
-      - "8056:8055"
+      - "8055:8055"
     environment:
       KEY: "uD4sL9pA2vF8jN5kR1wG3bH6yC7xZ0qT" 
       SECRET: "mB1oI5eW9aV3kH7rT4zL8pD2fN6jG0uC"
       DB_CLIENT: "mssql"
-      DB_HOST: "database"
+      DB_HOST: "mssql_server"
       DB_PORT: "1433"
-      DB_DATABASE: "StackOverflow2010"
-      DB_USER: "root"
-      DB_PASSWORD: "PulauJawaBesar1234" # Diubah
-      ADMIN_EMAIL: "admin@x.com"
-      ADMIN_PASSWORD: "PulauJawaBesar1234" # Diubah
-    depends_on:
-      - database
-    networks:
-      - app-net
-    restart: unless-stopped
-
-  app2:
-    image: directus/directus:latest
-    container_name: app_server_2
-    ports:
-      - "8057:8055"
-    environment:
-      KEY: "uD4sL9pA2vF8jN5kR1wG3bH6yC7xZ0qT"
-      SECRET: "mB1oI5eW9aV3kH7rT4zL8pD2fN6jG0uC"
-      DB_CLIENT: "mssql"
-      DB_HOST: "database"
-      DB_PORT: "1433"
-      DB_DATABASE: "StackOverflow2010"
+      DB_DATABASE: "StackOverflowMini"
       DB_USER: "sa"
-      DB_PASSWORD: "PulauJawaBesar1234" # Diubah
-      ADMIN_EMAIL: "admin@x.com"
-      ADMIN_PASSWORD: "PulauJawaBesar1234" # Diubah
+      DB_PASSWORD: "VeryLongPassword69$" # Diubah
+      ADMIN_EMAIL: "admin@mail.com"
+      ADMIN_PASSWORD: "admin" # Diubah
     depends_on:
       - database
     networks:
       - app-net
     restart: unless-stopped
-
-  loadbalancer:
-    image: haproxy:2.9-alpine
-    container_name: load_balancer
-    ports:
-      - "8080:8080"
-      - "8404:8404"
-    volumes:
-      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-    depends_on:
-      - app1
-      - app2
-    networks:
-      - app-net
-    restart: unless-stopped
-
-  k6_client:
-    image: grafana/k6:latest  
-    container_name: k6_client
-    volumes:
-      - ./k6-scripts:/scripts
-    networks:
-      - app-net
+  #
+  # app2:
+  #   image: directus/directus:latest
+  #   container_name: app_server_2
+  #   ports:
+  #     - "8057:8055"
+  #   environment:
+  #     KEY: "uD4sL9pA2vF8jN5kR1wG3bH6yC7xZ0qT"
+  #     SECRET: "mB1oI5eW9aV3kH7rT4zL8pD2fN6jG0uC"
+  #     DB_CLIENT: "mssql"
+  #     DB_HOST: "database"
+  #     DB_PORT: "1433"
+  #     DB_DATABASE: "StackOverflow2010"
+  #     DB_USER: "sa"
+  #     DB_PASSWORD: "PulauJawaBesar1234" # Diubah
+  #     ADMIN_EMAIL: "admin@x.com"
+  #     ADMIN_PASSWORD: "PulauJawaBesar1234" # Diubah
+  #   depends_on:
+  #     - database
+  #   networks:
+  #     - app-net
+  #   restart: unless-stopped
+  #
+  # loadbalancer:
+  #   image: haproxy:2.9-alpine
+  #   container_name: load_balancer
+  #   ports:
+  #     - "8080:8080"
+  #     - "8404:8404"
+  #   volumes:
+  #     - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+  #   depends_on:
+  #     - app1
+  #     - app2
+  #   networks:
+  #     - app-net
+  #   restart: unless-stopped
+  #
+  # k6_client:
+  #   image: grafana/k6:latest  
+  #   container_name: k6_client
+  #   volumes:
+  #     - ./k6-scripts:/scripts
+  #   networks:
+  #     - app-net
 
 networks:
   app-net:
-    driver: bridge
 
 volumes:
   mssql_data:

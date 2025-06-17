@@ -27,6 +27,7 @@ services:
     environment:
       KEY: "uD4sL9pA2vF8jN5kR1wG3bH6yC7xZ0qT" 
       SECRET: "mB1oI5eW9aV3kH7rT4zL8pD2fN6jG0uC"
+      ADMIN_TOKEN: "CUuaxLbnkBkI2dfDhn1NyFRGmNFo6i3c"
       DB_CLIENT: "mssql"
       DB_HOST: "mssql_server"
       DB_PORT: "1433"
@@ -78,16 +79,23 @@ services:
   #     - app-net
   #   restart: unless-stopped
   #
-  # k6_client:
-  #   image: grafana/k6:latest  
-  #   container_name: k6_client
-  #   volumes:
-  #     - ./k6-scripts:/scripts
-  #   networks:
-  #     - app-net
+
+  k6:
+    build:
+      context: ./xk6-dashboard
+      dockerfile: Dockerfile
+    container_name: k6
+    volumes:
+      - ./k6-scripts:/scripts
+    working_dir: /scripts
+    environment:
+      K6_WEB_DASHBOARD_HOST: "0.0.0.0"
+      K6_WEB_DASHBOARD_PORT: "5665"
+    ports:
+      - "5665:5665"
+    tty: true
+    networks:
+      - app-net
 
 networks:
   app-net:
-
-volumes:
-  mssql_data:

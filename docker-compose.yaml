@@ -18,10 +18,16 @@ services:
       - app-net
     restart: unless-stopped
     tty: true
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "VeryLongPassword69$" -C -Q "SELECT name FROM sys.databases WHERE name = 'StackOverflowMini'" | grep -q "StackOverflowMini" || exit 1
+      interval: 30s
+      timeout: 60s
+      retries: 3
+      start_period: 30s
 
-  directus:
+  directus-master:
     image: directus/directus:11
-    container_name: directus
+    container_name: directus-master
     ports:
       - "8055:8055"
     environment:
@@ -36,8 +42,51 @@ services:
       DB_PASSWORD: "VeryLongPassword69$" # Diubah
       ADMIN_EMAIL: "admin@mail.com"
       ADMIN_PASSWORD: "admin" # Diubah
+      PORT: "8055"
+      TRUSTED_PROXIES: "0.0.0.0/0"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://directus-master:8055/server/health"]
+      interval: 300s
+      timeout: 300s
+      retries: 15
+      start_period: 120s
     depends_on:
-      - database
+      database:
+        condition: service_healthy
+    networks:
+      - app-net
+    restart: unless-stopped
+
+  directus-slave:
+    image: directus/directus:11
+    container_name: directus-slave
+    ports:
+      - "8066:8066"
+    environment:
+      KEY: "uD4sL9pA2vF8jN5kR1wG3bH6yC7xZ0qT" 
+      SECRET: "mB1oI5eW9aV3kH7rT4zL8pD2fN6jG0uC"
+      ADMIN_TOKEN: "CUuaxLbnkBkI2dfDhn1NyFRGmNFo6i3c"
+      DB_CLIENT: "mssql"
+      DB_HOST: "mssql_server"
+      DB_PORT: "1433"
+      DB_DATABASE: "StackOverflowMini"
+      DB_USER: "sa"
+      DB_PASSWORD: "VeryLongPassword69$" # Diubah
+      ADMIN_EMAIL: "admin@mail.com"
+      ADMIN_PASSWORD: "admin" # Diubah
+      PORT: "8066"
+      TRUSTED_PROXIES: "0.0.0.0/0"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://directus-slave:8066/server/health"]
+      interval: 300s
+      timeout: 300s
+      retries: 15
+      start_period: 120s
+    depends_on:
+      database:
+        condition: service_healthy
+      directus-master:
+        condition: service_healthy
     networks:
       - app-net
     restart: unless-stopped
@@ -65,7 +114,7 @@ services:
   #   restart: unless-stopped
   #
   # loadbalancer:
-  #   image: haproxy:2.9-alpine
+  #   image: haproxy:lts-alpine
   #   container_name: load_balancer
   #   ports:
   #     - "8080:8080"
@@ -78,7 +127,33 @@ services:
   #   networks:
   #     - app-net
   #   restart: unless-stopped
-  #
+
+  loadbalancer:
+    image: caddy:2.10.0-alpine
+    container_name: load_balancer
+    ports:
+      - "8080:80"
+      - "8888:8888"
+      - "2019:2019"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - .:/srv:ro
+    depends_on:
+      database:
+        condition: service_healthy
+      directus-master:
+        condition: service_healthy
+      directus-slave:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - app-net
+    restart: unless-stopped
 
   k6:
     build:
@@ -86,7 +161,8 @@ services:
       dockerfile: Dockerfile
     container_name: k6
     volumes:
-      - ./k6-scripts:/scripts
+      - ./k6/scripts:/scripts
+      - ./k6/outputs:/outputs
     working_dir: /scripts
     environment:
       K6_WEB_DASHBOARD_HOST: "0.0.0.0"
@@ -96,6 +172,15 @@ services:
     tty: true
     networks:
       - app-net
+    depends_on:
+      database:
+        condition: service_healthy
+      directus-master:
+        condition: service_healthy
+      directus-slave:
+        condition: service_healthy
+      loadbalancer:
+        condition: service_healthy
 
 networks:
   app-net:

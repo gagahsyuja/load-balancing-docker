@@ -1,0 +1,14 @@
+:80 {
+    root * /srv
+    file_server browse
+}
+
+:8888 {
+    reverse_proxy {
+        to directus-master:8055 directus-slave:8066
+        lb_policy weighted_round_robin 5 1
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Client-IP {remote}
+    }
+}
